@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SQL Beautifier — Simple</title>
+  <style>
+    :root{
+      --bg:#0f1724; --card:#0b1220; --muted:#98a0b3; --accent:#6ee7b7;
+      --glass: rgba(255,255,255,0.03);
+      --radius:12px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{
+      display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(180deg,#071027 0%, #071732 40%, #06151a 100%);
+      color:#E6EEF3;padding:24px;
+    }
+    .container{
+      width:100%; max-width:1100px; border-radius:16px; padding:20px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      box-shadow: 0 6px 30px rgba(2,6,23,0.6); backdrop-filter: blur(6px);
+      display:grid; grid-template-columns: 1fr 460px; gap:18px;
+    }
+    header{
+      grid-column:1/-1; display:flex;align-items:center; justify-content:space-between;
+      gap:12px;
+    }
+    header h1{margin:0;font-size:18px;letter-spacing:0.2px}
+    header p{margin:0;color:var(--muted);font-size:13px}
+    .panel{
+      background:var(--card); border-radius:12px; padding:14px; min-height:320px; display:flex;flex-direction:column;
+    }
+    .left .panel{min-height:520px}
+    label{font-size:13px;color:var(--muted);display:block;margin-bottom:8px}
+    textarea{
+      resize:vertical; min-height:240px; font-family:var(--mono); font-size:13px;
+      background:var(--glass); color:#e6f2f0; border:1px solid rgba(255,255,255,0.03);
+      padding:12px; border-radius:8px; outline: none; width:100%;
+    }
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+    .btn{
+      background:transparent;border:1px solid rgba(255,255,255,0.06); padding:8px 12px;border-radius:8px;color:var(--muted);
+      cursor:pointer;font-weight:600;font-size:13px;
+    }
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#60a5fa); color:#071022;border:none;box-shadow:0 6px 18px rgba(96,165,250,0.12)}
+    .btn.ghost{background:transparent;border:1px dashed rgba(255,255,255,0.04)}
+    .options{display:flex;gap:12px;align-items:center}
+    .switch{display:flex;align-items:center;gap:8px}
+    input[type=number]{width:68px;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--muted)}
+    .right .panel{overflow:auto}
+    pre.output{
+      white-space:pre-wrap;font-family:var(--mono);font-size:13px;margin:0;
+      background:linear-gradient(180deg, rgba(0,0,0,0.18), rgba(255,255,255,0.02));
+      padding:12px;border-radius:8px;border:1px solid rgba(255,255,255,0.03); color:#dff5f1;
+      line-height:1.55;
+    }
+    .meta{display:flex;justify-content:space-between;margin-top:10px;align-items:center}
+    .hint{font-size:12px;color:var(--muted)}
+    .footer{grid-column:1/-1;margin-top:14px;color:var(--muted);font-size:12px;text-align:center}
+    /* small responsiveness */
+    @media (max-width:980px){
+      .container{grid-template-columns:1fr; padding:12px}
+      .left .panel{min-height:360px}
+    }
+    /* minimal syntax highlight (keywords) */
+    .kw{color:#a1e3ff;font-weight:700}
+    .str{color:#ffd1a1}
+    .num{color:#ffb4d6}
+    .comment{color:#8da0b2;font-style:italic}
+  </style>
+</head>
+<body>
+  <div class="container" role="application" aria-label="SQL Beautifier">
+    <header>
+      <div>
+        <h1>SQL Beautifier</h1>
+        <p>Paste SQL on the left and click <strong>Format</strong>. Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to format quickly.</p>
+      </div>
+      <div style="text-align:right">
+        <span class="hint">Simple, client-side, no data leaves your browser</span>
+      </div>
+    </header>
+
+    <section class="left">
+      <div class="panel">
+        <label for="sqlInput">SQL input</label>
+        <textarea id="sqlInput" placeholder="Paste SQL here... -- e.g. SELECT id, name FROM users WHERE active = 1 ORDER BY name;"></textarea>
+
+        <div class="controls" style="margin-top:12px">
+          <div class="options">
+            <div class="switch">
+              <input id="uppercaseKeywords" type="checkbox" checked />
+              <label for="uppercaseKeywords" style="color:var(--muted);font-size:13px">Uppercase keywords</label>
+            </div>
+            <div class="switch">
+              <label for="indentSize" style="color:var(--muted);font-size:13px">Indent size</label>
+              <input id="indentSize" type="number" min="2" max="8" value="4" />
+            </div>
+          </div>
+
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn ghost" id="clearBtn" title="Clear input">Clear</button>
+            <button class="btn" id="copyInputBtn" title="Copy input">Copy Input</button>
+            <button class="btn primary" id="formatBtn" title="Format SQL (Ctrl+Enter)">Format</button>
+          </div>
+        </div>
+
+        <div class="meta" style="margin-top:10px">
+          <div class="hint">Supports common SQL clauses and joins</div>
+          <div class="hint">Works offline in your browser</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="right">
+      <div class="panel">
+        <label for="output">Formatted SQL</label>
+        <pre id="output" class="output" aria-live="polite" tabindex="0">Formatted SQL will appear here.</pre>
+
+        <div style="display:flex;gap:8px;margin-top:12px;align-items:center">
+          <button class="btn" id="copyBtn">Copy</button>
+          <button class="btn ghost" id="downloadBtn">Download .sql</button>
+          <div style="margin-left:auto;color:var(--muted);font-size:12px">Click output to focus and select</div>
+        </div>
+      </div>
+    </section>
+
+    <div class="footer">Made with ☕ · Simple regex-based formatter — edit the keyword list in the JS to suit your taste</div>
+  </div>
+
+  <script>
+    (function(){
+      const input = document.getElementById('sqlInput');
+      const output = document.getElementById('output');
+      const formatBtn = document.getElementById('formatBtn');
+      const clearBtn = document.getElementById('clearBtn');
+      const copyBtn = document.getElementById('copyBtn');
+      const copyInputBtn = document.getElementById('copyInputBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+      const uppercaseCheckbox = document.getElementById('uppercaseKeywords');
+      const indentSizeInput = document.getElementById('indentSize');
+
+      // Common SQL keywords (order matters for multi-word ones)
+      const CLAUSES = [
+        'SELECT','FROM','WHERE','GROUP BY','HAVING','ORDER BY','LIMIT','OFFSET',
+        'INSERT INTO','INSERT','VALUES','UPDATE','SET','DELETE','CREATE TABLE','ALTER TABLE','DROP TABLE',
+        'INNER JOIN','LEFT JOIN','RIGHT JOIN','FULL OUTER JOIN','FULL JOIN','JOIN','ON','UNION','UNION ALL'
+      ];
+
+      const KEYWORDS = [
+        'SELECT','FROM','WHERE','JOIN','INNER','LEFT','RIGHT','FULL','OUTER','ON','AS','AND','OR','NOT','IN','IS','NULL',
+        'GROUP BY','ORDER BY','HAVING','LIMIT','OFFSET','INSERT','INTO','VALUES','UPDATE','SET','DELETE',
+        'CREATE','TABLE','ALTER','DROP','UNION','ALL','DISTINCT','CASE','WHEN','THEN','ELSE','END','LIKE','BETWEEN'
+      ];
+
+      // Utility: escape for regex
+      function escRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+      // Format function (best-effort)
+      function formatSQL(raw, options = {uppercase:true, indent:4}) {
+        if (!raw || !raw.trim()) return '';
+
+        // Preserve comments (--) and (/* */) by replacing them with placeholders
+        const blockComments = [];
+        raw = raw.replace(/\/\*[\s\S]*?\*\//g, function(m){
+          blockComments.push(m);
+          return `__BLOCKCOMMENT_${blockComments.length-1}__`;
+        });
+        const lineComments = [];
+        raw = raw.replace(/--.*$/mg, function(m){
+          lineComments.push(m);
+          return `__LINECOMMENT_${lineComments.length-1}__`;
+        });
+
+        // Normalize whitespace
+        let s = raw.replace(/\r\n/g,'\n').replace(/\t/g,' ').replace(/\v/g,' ');
+        s = s.replace(/\s+/g,' ').trim();
+
+        // Put newlines before major clauses (using CLAUSES list to avoid splitting expressions)
+        CLAUSES.forEach(clause=>{
+          const re = new RegExp('\\s+'+escRegex(clause)+'\\s+','ig');
+          s = s.replace(re, function(m){
+            return '\n' + clause + ' ';
+          });
+          // Also handle when clause appears at start (no leading space)
+          const re2 = new RegExp('^'+escRegex(clause)+'\\s+','i');
+          s = s.replace(re2, function(m){ return clause + ' ';});
+        });
+
+        // Also make sure joins and ON are on new lines
+        s = s.replace(/\s+ON\s+/ig, '\nON ');
+        s = s.replace(/\s+AND\s+/ig, ' AND ');
+        s = s.replace(/\s+OR\s+/ig, ' OR ');
+
+        // Split lines, trim
+        let lines = s.split('\n').map(l=>l.trim()).filter(l=>l.length>0);
+
+        // Build formatted lines with indentation and special handling for SELECT lists and parentheses
+        const indentUnit = ' '.repeat(Math.max(0, options.indent || 4));
+        let formatted = [];
+        let indentLevel = 0;
+
+        function pushLine(line){
+          formatted.push(indentUnit.repeat(indentLevel) + line);
+        }
+
+        for (let i=0;i<lines.length;i++){
+          let line = lines[i];
+
+          // Uppercase keywords if requested (but avoid uppercasing strings inside quotes — naive approach: don't touch quoted substrings)
+          if (options.uppercase) {
+            // Simple approach: uppercase keywords by regex
+            KEYWORDS.forEach(kw=>{
+              const r = new RegExp('\\b' + escRegex(kw) + '\\b','ig');
+              line = line.replace(r, kw);
+            });
+          }
+
+          // Handle SELECT columns: put each column on its own indented line
+          if (/^SELECT\b/i.test(line)) {
+            // separate SELECT from rest
+            const after = line.replace(/^SELECT\b\s*/i,'').trim();
+            pushLine('SELECT');
+            if (after.length>0) {
+              // split top-level commas (we assume no commas inside function args or subqueries — decent heuristic)
+              const cols = splitTopLevelCommas(after);
+              indentLevel++;
+              cols.forEach((c,idx)=>{
+                const text = c.trim();
+                const suffix = (idx < cols.length - 1) ? ',' : '';
+                pushLine(text + suffix);
+              });
+              indentLevel--;
+            }
+            continue;
+          }
+
+          // If this line starts with a clause that should reduce indent (FROM, WHERE, GROUP BY, ORDER BY, HAVING, LIMIT)
+          if (/^(FROM|WHERE|GROUP BY|HAVING|ORDER BY|LIMIT|OFFSET|INSERT|UPDATE|DELETE|CREATE|ALTER|DROP|UNION)\b/i.test(line)) {
+            // ensure clause at base indent
+            pushLine(line);
+            continue;
+          }
+
+          // JOIN lines often can be indented under FROM
+          if (/^(INNER JOIN|LEFT JOIN|RIGHT JOIN|FULL JOIN|FULL OUTER JOIN|JOIN)\b/i.test(line)) {
+            indentLevel = Math.max(1,indentLevel); // ensure at least 1 indentation
+            pushLine(line);
+            continue;
+          }
+
+          // ON lines are typically indented one level
+          if (/^ON\b/i.test(line)) {
+            indentLevel = Math.max(1, indentLevel);
+            indentLevel++;
+            pushLine(line);
+            indentLevel--;
+            continue;
+          }
+
+          // Parentheses handling: naive character-level indentation
+          if (/[()]/.test(line)) {
+            // we will process character by character to respect parentheses indentation
+            let out = '';
+            for (let ch of line) {
+              if (ch === '(') {
+                out += '(\n';
+                pushLine(out.trim());
+                out = '';
+                indentLevel++;
+              } else if (ch === ')') {
+                if (out.trim()) {
+                  pushLine(out.trim());
+                  out = '';
+                }
+                indentLevel = Math.max(0, indentLevel-1);
+                pushLine(')'); // place closing paren on its own line
+              } else {
+                out += ch;
+              }
+            }
+            if (out.trim()) pushLine(out.trim());
+            continue;
+          }
+
+          // Default: normal line
+          pushLine(line);
+        }
+
+        // Post-process: adjust commas in lines so that if a line has trailing comma it's fine
+        let result = formatted.join('\n');
+
+        // Restore comments
+        result = result.replace(/__BLOCKCOMMENT_(\d+)__/g, (m,p1)=>blockComments[+p1]||m);
+        result = result.replace(/__LINECOMMENT_(\d+)__/g, (m,p1)=>lineComments[+p1]||m);
+
+        // Basic syntax highlighting wrappers (wrap keywords/strings/numbers/comments with spans)
+        // We will return raw formatted text; highlighting will be applied when rendering
+        return result;
+      }
+
+      // Splits by top-level commas (not inside parentheses)
+      function splitTopLevelCommas(text){
+        const parts = [];
+        let cur = '';
+        let depth = 0;
+        let inSingle = false, inDouble = false;
+        for (let i=0;i<text.length;i++){
+          const ch = text[i];
+          if (ch === "'" && !inDouble) { inSingle = !inSingle; cur += ch; continue; }
+          if (ch === '"' && !inSingle) { inDouble = !inDouble; cur += ch; continue; }
+          if (inSingle || inDouble) { cur += ch; continue; }
+          if (ch === '(') { depth++; cur += ch; continue; }
+          if (ch === ')') { depth = Math.max(0,depth-1); cur += ch; continue; }
+          if (ch === ',' && depth === 0) { parts.push(cur); cur = ''; continue; }
+          cur += ch;
+        }
+        if (cur.trim()) parts.push(cur);
+        return parts;
+      }
+
+      // Small helper to apply minimal highlighting with safe escaping
+      function escapeHtml(str){
+        return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      }
+
+      function highlight(text){
+        // escape html first
+        let t = escapeHtml(text);
+
+        // comments (/* */ and --)
+        t = t.replace(/(\/\*[\s\S]*?\*\/)/g, '<span class="comment">$1</span>');
+        t = t.replace(/(--[^\n]*)/g, '<span class="comment">$1</span>');
+
+        // strings
+        t = t.replace(/'([^']|'')*'/g, (m)=>`<span class="str">${m}</span>`);
+        t = t.replace(/"([^"]|"")*"/g, (m)=>`<span class="str">${m}</span>`);
+
+        // numbers (simple)
+        t = t.replace(/\b(\d+(?:\.\d+)?)\b/g,'<span class="num">$1</span>');
+
+        // keywords (longest first)
+        const order = KEYWORDS.slice().sort((a,b)=>b.length-a.length);
+        order.forEach(k=>{
+          const re = new RegExp('\\b' + escRegex(k) + '\\b','g');
+          t = t.replace(re, `<span class="kw">${k}</span>`);
+        });
+
+        return t;
+      }
+
+      // UI actions
+      function doFormat(){
+        const raw = input.value;
+        const options = { uppercase: uppercaseCheckbox.checked, indent: parseInt(indentSizeInput.value,10) || 4 };
+        try {
+          const formatted = formatSQL(raw, options);
+          // show highlighted HTML in pre — use innerHTML safely because we escape inside highlight()
+          output.innerHTML = highlight(formatted || '-- (no input) --');
+          output.scrollTop = 0;
+          // also sync textarea with formatted plain text (optional)
+          // input.value = formatted;
+        } catch (e){
+          output.textContent = 'Formatting error: ' + (e && e.message ? e.message : e);
+        }
+      }
+
+      formatBtn.addEventListener('click', doFormat);
+      clearBtn.addEventListener('click', ()=>{ input.value=''; output.textContent='Formatted SQL will appear here.'; input.focus(); });
+      copyBtn.addEventListener('click', async ()=>{
+        try {
+          // Copy the plain formatted text (without HTML)
+          const plain = output.innerText || output.textContent;
+          await navigator.clipboard.writeText(plain);
+          copyBtn.textContent = 'Copied ✓';
+          setTimeout(()=>copyBtn.textContent='Copy',900);
+        } catch (e) {
+          copyBtn.textContent = 'Copy failed';
+          setTimeout(()=>copyBtn.textContent='Copy',1200);
+        }
+      });
+      copyInputBtn.addEventListener('click', async ()=>{
+        try{
+          await navigator.clipboard.writeText(input.value);
+          copyInputBtn.textContent = 'Copied ✓';
+          setTimeout(()=>copyInputBtn.textContent='Copy Input',900);
+        }catch(e){
+          copyInputBtn.textContent = 'Copy failed';
+          setTimeout(()=>copyInputBtn.textContent='Copy Input',1200);
+        }
+      });
+
+      downloadBtn.addEventListener('click', ()=>{
+        const blob = new Blob([output.innerText || output.textContent], {type:'text/sql'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'query.sql';
+        document.body.appendChild(a); a.click();
+        a.remove(); URL.revokeObjectURL(url);
+      });
+
+      // Keyboard shortcut Ctrl+Enter to format
+      window.addEventListener('keydown',(ev)=>{
+        if ((ev.ctrlKey || ev.metaKey) && ev.key === 'Enter') {
+          ev.preventDefault();
+          doFormat();
+        }
+      });
+
+      // Quick format when user pastes (optional: debounce)
+      let pasteTimer = null;
+      input.addEventListener('paste', ()=>{
+        clearTimeout(pasteTimer);
+        pasteTimer = setTimeout(()=>{/* do nothing automatically to avoid surprising user */}, 300);
+      });
+
+      // initial demo SQL
+      input.value = `-- demo SQL
+SELECT u.id, u.name, u.email, COUNT(o.id) AS orders_count, SUM(o.total) as total_spent
+FROM users u
+LEFT JOIN orders o ON o.user_id = u.id AND o.status = 'completed'
+WHERE u.active = 1 AND u.signup_date >= '2024-01-01'
+GROUP BY u.id, u.name, u.email
+HAVING COUNT(o.id) > 0
+ORDER BY total_spent DESC, u.name
+LIMIT 50;`;
+
+      // initial render
+      doFormat();
+    })();
+  </script>
+</body>
+</html>
