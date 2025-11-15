@@ -1,0 +1,80 @@
+body{
+  background-color: #E3F2FD;
+  padding: 3rem;
+}
+
+.main-container{
+  padding: 1rem;
+  background-color:#45556c;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.input-output-row {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.input-section {
+  padding: 1rem;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.output-section {
+  padding: 1rem;
+  background-color: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+#custom-toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 9999;
+}
+
+.custom-toast {
+  min-width: 260px;
+  max-width: 350px;
+  padding: 15px 18px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: 500;
+  box-shadow: 0px 4px 14px rgba(0, 0, 0, 0.25);
+  opacity: 0;
+  transform: translateX(50px);
+  animation: slideIn 0.4s forwards, fadeOut 0.5s ease-in forwards 3s;
+}
+
+.custom-toast.success {
+  background: linear-gradient(135deg, #28c76f, #20b35a);
+}
+
+.custom-toast.error {
+  background: linear-gradient(135deg, #ea5455, #d63f40);
+}
+
+.custom-toast.warning {
+  background: linear-gradient(135deg, #ff9f43, #ff7f2a);
+}
+
+.custom-toast.info {
+  background: linear-gradient(135deg, #00cfe8, #00b7cf);
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(50px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
